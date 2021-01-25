@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%=title%></title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">PDF to Audio</h1>
+        <br><br>
+        <form id="form">
+            <div class="custom-file mb-3">
+                <input type="file" id="upload-input" class="custom-file-input" required accept=".pdf">
+                <label for="upload-input" class="custom-file-label">Choose file...</label>
+            </div>
+            <div class="progress">
+                <div class="progress-bar" role="progressbar"></div>
+            </div>
+            <div class="form-group">
+              <label for="format">Select Language of Voice:</label>
+              <select class="form-control" name="language" id="language">
+                  <option value="af" selected>Afrikaans</option>
+                  <option value="sq">Albanian</option>
+                  <option value="ar">Arabic</option>
+                  <option value="hy">Armenian</option>
+                  <option value="ca">Catalan</option>
+                  <option value="zh">Chinese</option>
+                  <option value="zh-cn">Chinese (Mandarin/China)</option>
+                  <option value="zh-tw">Chinese (Mandarin/Taiwan)</option>
+                  <option value="zh-yue">Chinese (Cantonese)</option>
+                  <option value="hr">Croatian</option>
+                  <option value="cs">Czech</option>
+                  <option value="da">Danish</option>
+                  <option value="nl">Dutch</option>
+                  <option value="en" selected>English</option>
+                  <option value="en-au">English (Australia)</option>
+                  <option value="en-uk">English (United Kingdom)</option>
+                  <option value="en-us">English (United States)</option>
+                  <option value="eo">Esperanto</option>
+                  <option value="fi">Finnish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="el">Greek</option>
+                  <option value="ht">Haitian Creole</option>
+                  <option value="hi">Hindi</option>
+                  <option value="hu">Hungarian</option>
+                  <option value="is">Icelandic</option>
+                  <option value="id">Indonesian</option>
+                  <option value="it">Italian</option>
+                  <option value="ja">Japanese</option>
+                  <option value="ko">Korean</option>
+                  <option value="la">Latin</option>
+                  <option value="lv">Latvian</option>
+                  <option value="mk">Macedonian</option>
+                  <option value="no">Norwegian</option>
+                  <option value="pl">Polish</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="pt-br">Portuguese (Brazil)</option>
+                  <option value="ro">Romanian</option>
+                  <option value="ru">Russian</option>
+                  <option value="sr">Serbian</option>
+                  <option value="sk">Slovak</option>
+                  <option value="es">Spanish</option>
+                  <option value="es-es">Spanish (Spain)</option>
+                  <option value="es-us">Spanish (United States)</option>
+                  <option value="sw">Swahili</option>
+                  <option value="sv">Swedish</option>
+                  <option value="ta">Tamil</option>
+                  <option value="th">Thai</option>
+                  <option value="tr">Turkish</option>
+                  <option value="vi">Vietnamese</option>
+                  <option value="cy">Welsh</option>
+              </select>
+          </div>
+            <div class="form-group">
+                <button class="btn btn-block btn-danger" id="button">
+                    Convert to Audio
+                </button>
+            </div>            
+        </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script>
+        var language = "en-us";
+        var files;
+        $("#language").change(function(){
+            language = $(this).children("option:selected").val();
+            // console.log(language)
+        });
+        $('#form').on('submit',function(e){
+            e.preventDefault();
+            $('#button').text("Uploading file");
+            $('#button').prop("disabled",true);
+            $('.progress-bar').text('25%');
+            $('.progress-bar').css("width","25%")
+            convertFile()
+        })
+        $('#upload-input').on('change',function(){
+            files = $(this).get(0).files;
+            // console.log(files)
+            var fileExtension = ['pdf'];
+            if ($.inArray($(this).val().split('.').pop().toLowerCase(), fileExtension) == -1) {
+             $(this).val("") 
+                 swal ( "Oops" ,"Please Upload a PDF File",  "error" )
+            }
+        })
+
+        function convertFile(){
+            if(files.length > 0){
+                var formData = new FormData();
+                for(let i=0;i<files.length;i++){
+                    var file = files[i];
+                    formData.append('file',file,file.name);
+                }
+                // console.log(formData)
+                var formdata2 = new FormData()
+                $.ajax({
+                    url:'/uploadpdf',
+                    type:'POST',
+                    data:formData,
+                    processData:false,
+                    contentType:false,
+                    success:function(data){
+                        // console.log(data)
+                        var data2 = {path:data.path,language:language};
+                        // console.log('upload successful!\n' + data.path);
+                        $('#button').text('File Convertion Started');
+                        $('#button').prop('disabled',true);
+                        formdata2.append('path',data.path);
+                        $.ajax({
+                            url:'/converttoaudio',
+                            type:'POST',
+                            data:JSON.stringify(data2),
+                            contentType:'application/json',
+                            dataType:'json',
+                            success:function(data){
+                                // console.log(data)
+                                // window.open('/download?path='+data.path,"_self");
+                                window.location.href = `/download?path=${data.path}`;
+                                $("#button").text("Upload File")
+                                $("#button").prop("disabled",false);
+                                // location.reload();
+                            }
+                        })
+                    },
+                    xhr:function(){
+                        var xhr = new XMLHttpRequest();
+                        xhr.upload.addEventListener('progress',function(evt){
+                            if(evt.lengthComputable){
+                                var percentComplete = evt.loaded / evt.total;
+                                percentComplete = parseInt(percentComplete * 100);
+                                $('.progress-bar').text(percentComplete + '%');
+                                $('.progress-bar').width(percentComplete + '%');
+                                if(percentComplete === 100){
+                                    $('.progress-bar').html('Done');
+                                }
+                            }
+                        },false);
+                        return xhr;
+                    }
+                });
+            }
+        }
+
+    </script>   
+</body>
+</html>
